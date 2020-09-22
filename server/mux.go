@@ -1,6 +1,9 @@
 package server
 
-import "strings"
+import (
+	"reflect"
+	"strings"
+)
 
 type Server interface {
 	Start() error
@@ -29,12 +32,19 @@ func NewMux(servers []Server) *mux {
 
 func (m *mux) Serve() error {
 	errs := make([]error, len(m.servers))
+	cases := make([]reflect.SelectCase, len(m.servers))
 	for i, s := range m.servers {
 		if err := s.Start(); err != nil {
-			return err
+			errs[i] = err
+			break
 		}
-		// ここでループが止まらないか？
-		errs[i] = <-s.AsyncErr()
+		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(s.AsyncErr())}
+	}
+	chosen, value, ok := reflect.Select(cases)
+	if chosen < len(cases) && ok {
+		if err, ok := value.Interface().(error); ok {
+			errs[chosen] = err
+		}
 	}
 	return &multiErrors{
 		errors: errs,

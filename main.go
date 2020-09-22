@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	params := rpc.Params{Addr: ":8000"}
+	params := rpc.Params{Addr: ":50051"}
 	s1 := rpc.New(params)
 	mux := server.NewMux([]server.Server{s1})
 	if err := mux.Serve(); err != nil {
