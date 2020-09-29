@@ -6,22 +6,25 @@ import (
 	"net"
 )
 
-type server struct {
+// Server is a server for gRPC
+type Server struct {
 	addr       string
 	grpcServer *grpc.Server
 	errCh      chan error
 }
 
+// Params is a parameters to set up Server.
 type Params struct {
 	Addr string
 }
 
-func New(params Params) *server {
+// New generates Server.
+func New(params Params) *Server {
 	gs := grpc.NewServer()
 	for _, svc := range newServices() {
 		svc.Register(gs)
 	}
-	return &server{
+	return &Server{
 		addr:       params.Addr,
 		grpcServer: gs,
 	}
@@ -37,7 +40,8 @@ func newServices() []serviceImpl {
 	}
 }
 
-func (s *server) Start() error {
+// Start starts to serve gRPC call.
+func (s *Server) Start() error {
 	lis, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
@@ -53,6 +57,7 @@ func (s *server) Start() error {
 	return nil
 }
 
-func (s *server) AsyncErr() <-chan error {
+// AsyncErr returns the channels containing error.
+func (s *Server) AsyncErr() <-chan error {
 	return s.errCh
 }
