@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/channelz/service"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/resolver/manual"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/channelz/service"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/resolver/manual"
 )
 
 const (
@@ -30,8 +31,8 @@ func main() {
 	defer s.Stop()
 
 	// Initialize manual resolver and Dial
-	r, rcleanup := manual.GenerateAndRegisterManualResolver()
-	defer rcleanup()
+	r, cleanup := manual.GenerateAndRegisterManualResolver()
+	defer cleanup()
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithBalancerName("round_robin"))
 	if err != nil {
@@ -56,7 +57,7 @@ func main() {
 		defer cancel()
 		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 		if err != nil {
-			log.Printf("counld not greet: %v", err)
+			log.Printf("could not greet: %v", err)
 		} else {
 			log.Printf("Greeting: %s", r.Message)
 		}
