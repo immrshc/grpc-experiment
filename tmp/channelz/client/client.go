@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
-	"google.golang.org/grpc/resolver"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"time"
+
+	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/resolver"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
@@ -27,6 +29,7 @@ func main() {
 	}
 	s := grpc.NewServer()
 	service.RegisterChannelzServiceToServer(s)
+	reflection.Register(s)
 	go s.Serve(lis)
 	defer s.Stop()
 

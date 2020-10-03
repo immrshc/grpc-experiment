@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"time"
 
+	"google.golang.org/grpc/reflection"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 
@@ -46,6 +48,7 @@ func main() {
 	defer lis.Close()
 	s := grpc.NewServer()
 	service.RegisterChannelzServiceToServer(s)
+	reflection.Register(s)
 	go s.Serve(lis)
 	defer s.Stop()
 
