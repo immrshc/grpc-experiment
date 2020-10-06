@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"time"
 
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/resolver/manual"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
-	"google.golang.org/grpc/resolver/manual"
+	"google.golang.org/grpc/reflection"
 )
 
 const (
@@ -36,15 +36,16 @@ func main() {
 	// Initialize manual resolver and Dial
 	r, cleanup := manual.GenerateAndRegisterManualResolver()
 	defer cleanup()
+	// Manually provide resolved addresses for the target.
+	state := resolver.State{Addresses: []resolver.Address{{Addr: ":10001"}, {Addr: ":10002"}, {Addr: ":10003"}}}
+	r.InitialState(state)
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithBalancerName("round_robin"))
+	//conn, err := grpc.Dial(":10001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	// Manually provide resolved addresses for the target.
-	state := resolver.State{Addresses: []resolver.Address{{Addr: ":10001"}, {Addr: ":10002"}, {Addr: ":10003"}}}
-	r.UpdateState(state)
 
 	c := pb.NewGreeterClient(conn)
 
