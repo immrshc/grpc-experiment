@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"time"
+
+	"google.golang.org/grpc/balancer/roundrobin"
 
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/resolver/manual"
@@ -40,7 +43,11 @@ func main() {
 	state := resolver.State{Addresses: []resolver.Address{{Addr: ":10001"}, {Addr: ":10002"}, {Addr: ":10003"}}}
 	r.InitialState(state)
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithBalancerName("round_robin"))
+	conn, err := grpc.Dial(
+		r.Scheme()+":///test.server",
+		grpc.WithInsecure(),
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
+	)
 	//conn, err := grpc.Dial(":10001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
