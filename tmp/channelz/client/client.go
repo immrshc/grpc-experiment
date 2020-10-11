@@ -20,54 +20,43 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-const (
-	defaultName = "world"
-)
-
 func main() {
-	// Set up the server serving channelz server.
+	// channelzのRPC用のサーバーを起動する
 	lis, err := net.Listen("tcp", ":50050")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	service.RegisterChannelzServiceToServer(s)
+	// 確認用にgRPC Serviceの情報を返せるようにする
+	// c.f. https://github.com/grpc/grpc-go/blob/master/Documentation/server-reflection-tutorial.md
 	reflection.Register(s)
 	go s.Serve(lis)
 	defer s.Stop()
 
-	// Initialize manual resolver and Dial
+	// 三つのサーバーにラウンドロビンするための名前解決の設定
 	r, cleanup := manual.GenerateAndRegisterManualResolver()
 	defer cleanup()
-	// Manually provide resolved addresses for the target.
 	state := resolver.State{Addresses: []resolver.Address{{Addr: ":10001"}, {Addr: ":10002"}, {Addr: ":10003"}}}
 	r.InitialState(state)
-	// Set up a connection to the server.
+	// サーバーへのコネクションを設定する
 	conn, err := grpc.Dial(
 		r.Scheme()+":///test.server",
 		grpc.WithInsecure(),
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
 	)
-	//conn, err := grpc.Dial(":10001", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 
+	// サーバーへRPCするクライアントの設定
 	c := pb.NewGreeterClient(conn)
-
-	// Contact the server and print out its response.
-	name := defaultName
-	if len(os.Args) > 1 {
-		name = os.Args[1]
-	}
-
-	// Make 100 SayHello RPCs
+	// 100回RPCし、150msをタイムアウトの閾値とする
 	for i := 0; i < 100; i++ {
-		// Setting a 150ms timeout on the RPC.
 		ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 		defer cancel()
-		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: "world"})
 		if err != nil {
 			log.Printf("could not greet: %v", err)
 		} else {
@@ -75,11 +64,8 @@ func main() {
 		}
 	}
 
-	// Wait fot CTRL+C to exit
-	// Unless you exit the program with CTRL+C, channelz data will be available for querying.
-	// Users can take time to examine and learn about the info provided by channelz.
+	// CTRL+Cでexitするまで待つことで、channelzの情報を保持しておける
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
-	// Block until a signal is received.
 	<-ch
 }

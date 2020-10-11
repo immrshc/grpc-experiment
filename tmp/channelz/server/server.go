@@ -34,13 +34,13 @@ type slowServer struct {
 }
 
 func (s *slowServer) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	// Delay 100ms ~ 200ms before replying
+	// 100~200msの間レスポンスを待つ
 	time.Sleep(time.Duration(100+rand.Intn(100)) * time.Millisecond)
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }
 
 func main() {
-	// Set up the server channelz service.
+	// channelzのRPC用のサーバーを起動する
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatal(err)
@@ -48,11 +48,13 @@ func main() {
 	defer lis.Close()
 	s := grpc.NewServer()
 	service.RegisterChannelzServiceToServer(s)
+	// 確認用にgRPC Serviceの情報を返せるようにする
+	// c.f. https://github.com/grpc/grpc-go/blob/master/Documentation/server-reflection-tutorial.md
 	reflection.Register(s)
 	go s.Serve(lis)
 	defer s.Stop()
 
-	// Start three GreeterServers(with one of them to be the slowServer).
+	// 三つのサーバーを起動させ、一つをレスポンスがクライアント側で設定したタイムアウトを超えるサーバーにする
 	var listeners []net.Listener
 	var svrs []*grpc.Server
 	for i := 0; i < 3; i++ {
@@ -71,11 +73,11 @@ func main() {
 		go s.Serve(lis)
 	}
 
-	// Wait for CTRL+C to exit.
+	// CTRL+Cでexitするまで待つことで、channelzの情報を保持しておける
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
-	// Block until a signal is received.
 	<-ch
+
 	for i := 0; i < 3; i++ {
 		svrs[i].Stop()
 		listeners[i].Close()
