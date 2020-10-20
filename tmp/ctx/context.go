@@ -48,3 +48,23 @@ func main() {
 	can1()
 	wg.Wait()
 }
+
+//func main() {
+//	ch1, ch2 := make(chan struct{}), make(chan struct{})
+//
+//	go func() {
+//		ch1 <- struct{}{}
+//	}()
+//	go func() {
+//		time.Sleep(3 * time.Second)
+//		ch2 <- struct{}{}
+//	}()
+//
+//	ch1 = nil
+//	select {
+//	case <-ch1:
+//		fmt.Println("ch1 received");
+//	case <-ch2:
+//		fmt.Println("ch2 received")
+//	}
+//}
