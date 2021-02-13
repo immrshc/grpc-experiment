@@ -2,9 +2,10 @@ package helloworld
 
 import (
 	"context"
-	"github.com/shoichiimamura/grpc-experiment/proto"
-	"google.golang.org/grpc"
 	"log"
+
+	"github.com/immrshc/grpc-experiment/proto"
+	"google.golang.org/grpc"
 )
 
 type server struct{}

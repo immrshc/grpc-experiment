@@ -1,9 +1,10 @@
 package rpc
 
 import (
-	"github.com/shoichiimamura/grpc-experiment/rpc/helloworld"
-	"google.golang.org/grpc"
 	"net"
+
+	"github.com/immrshc/grpc-experiment/rpc/helloworld"
+	"google.golang.org/grpc"
 )
 
 // Server is a server for gRPC

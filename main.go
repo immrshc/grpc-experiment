@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/shoichiimamura/grpc-experiment/rpc"
-	"github.com/shoichiimamura/grpc-experiment/server"
 	"log"
+
+	"github.com/immrshc/grpc-experiment/rpc"
+	"github.com/immrshc/grpc-experiment/server"
 )
 
 func main() {

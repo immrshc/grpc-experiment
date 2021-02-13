@@ -1,4 +1,4 @@
-module github.com/shoichiimamura/grpc-experiment
+module github.com/immrshc/grpc-experiment
 
 go 1.15
 

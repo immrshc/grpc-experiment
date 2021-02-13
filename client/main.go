@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"github.com/shoichiimamura/grpc-experiment/proto"
-	"google.golang.org/grpc"
 	"log"
 	"time"
+
+	"github.com/immrshc/grpc-experiment/proto"
+	"google.golang.org/grpc"
 )
 
 const address = "localhost:50051"
