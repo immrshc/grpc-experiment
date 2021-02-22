@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -21,7 +20,7 @@ type Client struct {
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
-	buf, err := ioutil.ReadAll(req.Body)
+	buf, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +28,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 	bodyReader := func() io.ReadCloser {
-		return ioutil.NopCloser(bytes.NewReader(buf))
+		return io.NopCloser(bytes.NewReader(buf))
 	}
 	var attemptNum int
 	for {
