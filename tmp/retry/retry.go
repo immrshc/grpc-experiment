@@ -62,6 +62,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		if c.RetryMax < attemptNum {
 			return nil, errors.New("retry max exceeded")
 		}
+		drainBody(res.Body)
 		wait := c.Backoff(attemptNum)
 		time.Sleep(wait)
 	}
@@ -90,6 +91,11 @@ func rewindBody(req *http.Request) (*http.Request, error) {
 	newReq := *req
 	newReq.Body = body
 	return &newReq, nil
+}
+
+func drainBody(body io.ReadCloser) {
+	io.Copy(io.Discard, body)
+	body.Close()
 }
 
 func main() {
