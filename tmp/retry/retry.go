@@ -37,7 +37,18 @@ func NewClient() *Client {
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	var attemptNum int
+	ctx := req.Context()
+
 	for {
+		select {
+		case <-ctx.Done():
+			if err := req.Body.Close(); err != nil {
+				return nil, err
+			}
+			return nil, ctx.Err()
+		default:
+		}
+
 		attemptNum++
 		req, err := rewindBody(req)
 		if err != nil {
