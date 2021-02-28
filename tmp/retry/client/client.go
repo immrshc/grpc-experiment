@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"runtime"
+	"sync"
 	"time"
 )
 
@@ -40,15 +43,6 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
 
 	for {
-		select {
-		case <-ctx.Done():
-			if err := req.Body.Close(); err != nil {
-				return nil, err
-			}
-			return nil, ctx.Err()
-		default:
-		}
-
 		attemptNum++
 		req, err := rewindBody(req)
 		if err != nil {
@@ -64,7 +58,16 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 		}
 		drainBody(res.Body)
 		wait := c.Backoff(attemptNum)
-		time.Sleep(wait)
+
+		select {
+		case <-ctx.Done():
+			if err := req.Body.Close(); err != nil {
+				return nil, err
+			}
+			return nil, ctx.Err()
+		case <-time.After(wait):
+		}
+
 	}
 }
 
@@ -98,17 +101,42 @@ func drainBody(body io.ReadCloser) {
 	body.Close()
 }
 
+func PooledTransport() *http.Transport {
+	var t *http.Transport
+	dt := http.DefaultTransport.(*http.Transport)
+	t = dt.Clone()
+	t.MaxIdleConnsPerHost = runtime.NumCPU()
+	//t.DisableKeepAlives = true
+	return t
+}
+
+func PooledClient() *http.Client {
+	return &http.Client{
+		Transport: PooledTransport(),
+	}
+}
+
 func main() {
-	client := NewClient()
-	req, err := http.NewRequest("POST", "http://www.google.com/robots.txt", bytes.NewBuffer([]byte("\"{\"x\":1,\"y\":2}\"")))
-	if err != nil {
-		log.Fatal(err)
+	var wg sync.WaitGroup
+	client := PooledClient()
+	//client := http.DefaultClient
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			res, err := client.Get("http://127.0.0.1:8080")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer res.Body.Close()
+			buf, err := io.ReadAll(res.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("res: %s\n", buf)
+		}()
+		time.Sleep(100 * time.Millisecond)
 	}
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := res.Body.Close(); err != nil {
-		log.Fatal(err)
-	}
+	wg.Wait()
+	//client.CloseIdleConnections()
 }
