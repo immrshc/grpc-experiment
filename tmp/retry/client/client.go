@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"runtime"
-	"sync"
 	"time"
 )
 
@@ -117,26 +116,23 @@ func PooledClient() *http.Client {
 }
 
 func main() {
-	var wg sync.WaitGroup
-	client := PooledClient()
-	//client := http.DefaultClient
+	//client := PooledClient()
+	client := http.DefaultClient
 	for i := 0; i < 30; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			res, err := client.Get("http://127.0.0.1:8080")
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer res.Body.Close()
-			buf, err := io.ReadAll(res.Body)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("res: %s\n", buf)
-		}()
-		time.Sleep(100 * time.Millisecond)
+		res, err := client.Get("http://127.0.0.1:8080")
+		if err != nil {
+			log.Fatal(err)
+		}
+		buf, err := io.ReadAll(res.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("res: %s\n", buf)
+		if err := res.Body.Close(); err != nil {
+			log.Fatal(err)
+		}
+		time.Sleep(1 * time.Second)
 	}
-	wg.Wait()
 	//client.CloseIdleConnections()
+	time.Sleep(3 * time.Minute)
 }
